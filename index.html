@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comparateur DayZ V2 complet</title>
+<style>
+:root {
+  --bg:#0b1220; --card:#111827; --card2:#0f172a; --border:#334155;
+  --text:#e5e7eb; --muted:#94a3b8; --a:#34d399; --b:#60a5fa; --eq:#fbbf24;
+}
+* { box-sizing:border-box; }
+body { margin:0; font-family:Arial,sans-serif; background:linear-gradient(180deg,#08101c,#0f172a); color:var(--text); }
+.wrap { max-width:1200px; margin:0 auto; padding:20px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:16px; }
+.grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+.controls { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+@media (max-width:900px) { .grid, .controls { grid-template-columns:1fr; } }
+label { display:block; margin:0 0 6px; color:#cbd5e1; }
+select, input { width:100%; padding:12px; border-radius:12px; border:1px solid var(--border); background:#0b1220; color:var(--text); }
+h1,h2,h3 { margin:0 0 12px; }
+.small { color:var(--muted); font-size:14px; }
+.kpis { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.kpi { background:#0b1220; border:1px solid var(--border); border-radius:12px; padding:10px; }
+.k { font-size:12px; color:var(--muted); }
+.v { font-size:22px; font-weight:700; margin-top:4px; }
+table { width:100%; border-collapse:collapse; }
+th,td { padding:10px; border-bottom:1px solid var(--border); text-align:left; }
+th { color:#bfdbfe; }
+.winA { color:var(--a); font-weight:700; }
+.winB { color:var(--b); font-weight:700; }
+.eq { color:var(--eq); font-weight:700; }
+.muted { color:var(--muted); }
+.bargrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+.barcard { background:#0b1220; border:1px solid var(--border); border-radius:14px; padding:12px; }
+.track { height:14px; background:#020617; border:1px solid var(--border); border-radius:999px; overflow:hidden; margin:8px 0 12px; }
+.fillA,.fillB { height:100%; }
+.fillA { background:var(--a); }
+.fillB { background:var(--b); }
+.badge { display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #3b82f6; background:#172554; color:#bfdbfe; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Comparateur d’armes DayZ — V2 complète</h1>
+    <div class="small">Choisis librement 2 armes, filtre par catégorie, recherche par nom, et les stats se mettent à jour automatiquement.</div>
+    <div class="small" style="margin-top:8px;">Sur iPhone : ouvre le fichier <strong>dans Safari ou Chrome</strong> après téléchargement, pas dans l’aperçu intégré.</div>
+    <div style="margin-top:10px" class="badge">HTML autonome à partager</div>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <div>
+        <label for="search">Recherche</label>
+        <input id="search" type="text" placeholder="Ex: AK, DMR, shotgun..." />
+      </div>
+      <div>
+        <label for="weaponA">Arme A</label>
+        <select id="weaponA"></select>
+      </div>
+      <div>
+        <label for="weaponB">Arme B</label>
+        <select id="weaponB"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2 id="nameA">Arme A</h2>
+      <div class="small" id="metaA"></div>
+      <div class="kpis" id="kpisA"></div>
+    </div>
+    <div class="card">
+      <h2 id="nameB">Arme B</h2>
+      <div class="small" id="metaB"></div>
+      <div class="kpis" id="kpisB"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Comparaison détaillée</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Stat</th>
+          <th id="headA">Arme A</th>
+          <th id="headB">Arme B</th>
+          <th>Avantage</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Barres visuelles</h2>
+    <div class="bargrid" id="bars"></div>
+  </div>
+</div>
+
+<script>
+var WEAPONS = [{"name": "DMR", "category": "DMR / précision", "caliber": ".308 Win", "damage": 150, "shock": 150, "mag": 20, "rpm": 500, "range": 800, "penetration": 95, "suppressor": "Non", "recoil": 82, "versatility": 95}, {"name": "VSD", "category": "DMR / précision", "caliber": "7.62x54R", "damage": 145, "shock": 150, "mag": 10, "rpm": 300, "range": 800, "penetration": 95, "suppressor": "Oui", "recoil": 70, "versatility": 72}, {"name": "VS-89", "category": "Précision", "caliber": "7.62x54R", "damage": 150, "shock": 150, "mag": 10, "rpm": 45, "range": 900, "penetration": 95, "suppressor": "Non", "recoil": 64, "versatility": 66}, {"name": "Mosin 91/30", "category": "Précision", "caliber": "7.62x54R", "damage": 150, "shock": 150, "mag": 5, "rpm": 55, "range": 900, "penetration": 95, "suppressor": "Non", "recoil": 65, "versatility": 58}, {"name": "M70 Tundra", "category": "Précision", "caliber": ".308 Win", "damage": 150, "shock": 150, "mag": 5, "rpm": 50, "range": 900, "penetration": 95, "suppressor": "Oui", "recoil": 68, "versatility": 68}, {"name": "Blaze", "category": "Précision", "caliber": ".308 Win", "damage": 150, "shock": 150, "mag": 2, "rpm": 80, "range": 850, "penetration": 95, "suppressor": "Non", "recoil": 62, "versatility": 52}, {"name": "CR-550 Savanna", "category": "Précision", "caliber": ".308 Win", "damage": 150, "shock": 150, "mag": 4, "rpm": 45, "range": 850, "penetration": 95, "suppressor": "Oui", "recoil": 66, "versatility": 60}, {"name": "Pioneer", "category": "Rifle", "caliber": "5.56x45", "damage": 96, "shock": 100, "mag": 5, "rpm": 55, "range": 650, "penetration": 72, "suppressor": "Oui", "recoil": 84, "versatility": 70}, {"name": "SSG 82", "category": "Rifle", "caliber": "5.45x39", "damage": 85, "shock": 90, "mag": 5, "rpm": 50, "range": 600, "penetration": 68, "suppressor": "Oui", "recoil": 90, "versatility": 62}, {"name": "BK-18", "category": "Rifle", "caliber": "7.62x39", "damage": 122, "shock": 100, "mag": 1, "rpm": 35, "range": 500, "penetration": 80, "suppressor": "Non", "recoil": 60, "versatility": 34}, {"name": "Repeater Carbine", "category": "Rifle", "caliber": ".357", "damage": 110, "shock": 100, "mag": 6, "rpm": 90, "range": 250, "penetration": 76, "suppressor": "Non", "recoil": 72, "versatility": 60}, {"name": "SK 59/66", "category": "Rifle", "caliber": "7.62x39", "damage": 122, "shock": 100, "mag": 10, "rpm": 180, "range": 450, "penetration": 80, "suppressor": "Non", "recoil": 70, "versatility": 74}, {"name": "LAR", "category": "Battle rifle", "caliber": ".308 Win", "damage": 150, "shock": 150, "mag": 20, "rpm": 600, "range": 700, "penetration": 95, "suppressor": "Non", "recoil": 60, "versatility": 88}, {"name": "M4A1", "category": "Fusil d'assaut", "caliber": "5.56x45", "damage": 96, "shock": 100, "mag": 30, "rpm": 900, "range": 500, "penetration": 72, "suppressor": "Oui", "recoil": 88, "versatility": 90}, {"name": "KAM", "category": "Fusil d'assaut", "caliber": "7.62x39", "damage": 122, "shock": 100, "mag": 30, "rpm": 600, "range": 400, "penetration": 80, "suppressor": "Oui", "recoil": 68, "versatility": 84}, {"name": "KA-74", "category": "Fusil d'assaut", "caliber": "5.45x39", "damage": 96, "shock": 100, "mag": 30, "rpm": 650, "range": 500, "penetration": 68, "suppressor": "Oui", "recoil": 80, "versatility": 85}, {"name": "KA-101", "category": "Fusil d'assaut", "caliber": "5.56x45", "damage": 96, "shock": 100, "mag": 30, "rpm": 600, "range": 500, "penetration": 72, "suppressor": "Oui", "recoil": 82, "versatility": 86}, {"name": "KAS-74U", "category": "Fusil d'assaut", "caliber": "5.45x39", "damage": 96, "shock": 100, "mag": 30, "rpm": 700, "range": 300, "penetration": 68, "suppressor": "Oui", "recoil": 74, "versatility": 76}, {"name": "AUR A1", "category": "Fusil d'assaut", "caliber": "5.56x45", "damage": 96, "shock": 100, "mag": 30, "rpm": 680, "range": 500, "penetration": 72, "suppressor": "Oui", "recoil": 84, "versatility": 87}, {"name": "AUR AX", "category": "Fusil d'assaut", "caliber": "5.56x45", "damage": 96, "shock": 100, "mag": 30, "rpm": 800, "range": 500, "penetration": 72, "suppressor": "Oui", "recoil": 86, "versatility": 89}, {"name": "LE-MAS", "category": "Fusil d'assaut", "caliber": "5.56x45", "damage": 96, "shock": 100, "mag": 25, "rpm": 900, "range": 450, "penetration": 72, "suppressor": "Non", "recoil": 76, "versatility": 83}, {"name": "M16-A2", "category": "Fusil d'assaut", "caliber": "5.56x45", "damage": 96, "shock": 100, "mag": 30, "rpm": 850, "range": 500, "penetration": 72, "suppressor": "Non", "recoil": 82, "versatility": 82}, {"name": "VSS", "category": "DMR / précision", "caliber": "9x39", "damage": 95, "shock": 120, "mag": 10, "rpm": 900, "range": 250, "penetration": 82, "suppressor": "Oui (intégré)", "recoil": 78, "versatility": 74}, {"name": "SG5-K", "category": "SMG", "caliber": "9x19", "damage": 70, "shock": 80, "mag": 30, "rpm": 800, "range": 150, "penetration": 50, "suppressor": "Oui", "recoil": 90, "versatility": 71}, {"name": "USG-45", "category": "SMG", "caliber": ".45 ACP", "damage": 78, "shock": 90, "mag": 25, "rpm": 600, "range": 120, "penetration": 58, "suppressor": "Oui", "recoil": 88, "versatility": 69}, {"name": "CR-61 Skorpion", "category": "SMG", "caliber": ".380 ACP", "damage": 42, "shock": 55, "mag": 20, "rpm": 900, "range": 80, "penetration": 34, "suppressor": "Oui", "recoil": 92, "versatility": 48}, {"name": "PP-19 Bizon", "category": "SMG", "caliber": "9x19", "damage": 70, "shock": 80, "mag": 64, "rpm": 700, "range": 140, "penetration": 50, "suppressor": "Oui", "recoil": 86, "versatility": 74}, {"name": "BK-43", "category": "Fusil à pompe / canon basculant", "caliber": "12ga", "damage": 160, "shock": 180, "mag": 2, "rpm": 90, "range": 60, "penetration": 88, "suppressor": "Non", "recoil": 55, "versatility": 50}, {"name": "BK-133", "category": "Fusil à pompe / canon basculant", "caliber": "12ga", "damage": 160, "shock": 180, "mag": 6, "rpm": 80, "range": 65, "penetration": 88, "suppressor": "Non", "recoil": 58, "versatility": 62}, {"name": "Vaiga", "category": "Fusil à pompe / canon basculant", "caliber": "12ga", "damage": 160, "shock": 180, "mag": 5, "rpm": 240, "range": 70, "penetration": 88, "suppressor": "Non", "recoil": 52, "versatility": 70}, {"name": "Mlock-91", "category": "Pistolet", "caliber": "9x19", "damage": 70, "shock": 80, "mag": 15, "rpm": 400, "range": 60, "penetration": 50, "suppressor": "Oui", "recoil": 92, "versatility": 58}, {"name": "FX-45", "category": "Pistolet", "caliber": ".45 ACP", "damage": 78, "shock": 90, "mag": 15, "rpm": 350, "range": 55, "penetration": 58, "suppressor": "Oui", "recoil": 88, "versatility": 60}, {"name": "Kolt 1911", "category": "Pistolet", "caliber": ".45 ACP", "damage": 78, "shock": 90, "mag": 7, "rpm": 320, "range": 50, "penetration": 58, "suppressor": "Oui", "recoil": 84, "versatility": 49}, {"name": "P1", "category": "Pistolet", "caliber": "9x19", "damage": 70, "shock": 80, "mag": 8, "rpm": 320, "range": 50, "penetration": 50, "suppressor": "Oui", "recoil": 85, "versatility": 48}, {"name": "IJ-70", "category": "Pistolet", "caliber": ".380 ACP", "damage": 42, "shock": 55, "mag": 8, "rpm": 320, "range": 40, "penetration": 34, "suppressor": "Oui", "recoil": 86, "versatility": 38}, {"name": "Desert Eagle", "category": "Pistolet", "caliber": ".357", "damage": 110, "shock": 110, "mag": 9, "rpm": 260, "range": 70, "penetration": 76, "suppressor": "Non", "recoil": 62, "versatility": 55}, {"name": "Revolver", "category": "Pistolet", "caliber": ".357", "damage": 110, "shock": 110, "mag": 6, "rpm": 220, "range": 70, "penetration": 76, "suppressor": "Non", "recoil": 68, "versatility": 50}, {"name": "Longhorn", "category": "Pistolet", "caliber": ".308 Win", "damage": 150, "shock": 150, "mag": 1, "rpm": 45, "range": 120, "penetration": 95, "suppressor": "Non", "recoil": 40, "versatility": 25}, {"name": "Amphibia S", "category": "Pistolet", "caliber": ".22 LR", "damage": 24, "shock": 35, "mag": 10, "rpm": 350, "range": 35, "penetration": 18, "suppressor": "Oui (intégré)", "recoil": 98, "versatility": 34}, {"name": "MK II", "category": "Pistolet", "caliber": ".22 LR", "damage": 24, "shock": 35, "mag": 10, "rpm": 350, "range": 35, "penetration": 18, "suppressor": "Oui (intégré)", "recoil": 98, "versatility": 34}];
+var STATS = [
+  ["category","Catégorie","text",null],
+  ["caliber","Calibre","text",null],
+  ["damage","Dégâts","num",200],
+  ["shock","Shock / KO","num",200],
+  ["mag","Chargeur","num",70],
+  ["rpm","Cadence (RPM)","num",1000],
+  ["range","Portée (m)","num",1000],
+  ["penetration","Pénétration","num",100],
+  ["suppressor","Suppresseur","text",null],
+  ["recoil","Contrôle du recul","num",100],
+  ["versatility","Polyvalence","num",100]
+];
+
+function byName(name) {
+  for (var i = 0; i < WEAPONS.length; i++) {
+    if (WEAPONS[i].name === name) return WEAPONS[i];
+  }
+  return null;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function populateSelects() {
+  var q = document.getElementById("search").value.toLowerCase().trim();
+  var list = WEAPONS.filter(function(w) {
+    return !q || (w.name + " " + w.category + " " + w.caliber).toLowerCase().indexOf(q) !== -1;
+  });
+  var selA = document.getElementById("weaponA");
+  var selB = document.getElementById("weaponB");
+  var currentA = selA.value;
+  var currentB = selB.value;
+  selA.innerHTML = "";
+  selB.innerHTML = "";
+
+  for (var i = 0; i < list.length; i++) {
+    var text = list[i].name + " — " + list[i].category + " — " + list[i].caliber;
+    selA.innerHTML += '<option value="' + esc(list[i].name) + '">' + esc(text) + '</option>';
+    selB.innerHTML += '<option value="' + esc(list[i].name) + '">' + esc(text) + '</option>';
+  }
+
+  var existsA = list.some(function(w) { return w.name === currentA; });
+  var existsB = list.some(function(w) { return w.name === currentB; });
+  selA.value = existsA ? currentA : (list[0] ? list[0].name : "");
+  selB.value = existsB ? currentB : (list[1] ? list[1].name : (list[0] ? list[0].name : ""));
+  if (selA.value === selB.value && list.length > 1) selB.value = list[1].name;
+  render();
+}
+
+function kpi(label, value) {
+  return '<div class="kpi"><div class="k">' + esc(label) + '</div><div class="v">' + esc(value) + '</div></div>';
+}
+
+function winner(a, b, key, type) {
+  if (type === "text") return a[key] === b[key] ? "Égal" : "—";
+  if (a[key] === b[key]) return "Égal";
+  return a[key] > b[key] ? a.name : b.name;
+}
+
+function renderSide(prefix, w) {
+  document.getElementById("name" + prefix).textContent = w.name;
+  document.getElementById("meta" + prefix).textContent = w.category + " · " + w.caliber;
+  document.getElementById("kpis" + prefix).innerHTML =
+    kpi("Dégâts", w.damage) +
+    kpi("Shock", w.shock) +
+    kpi("Chargeur", w.mag) +
+    kpi("Cadence", w.rpm) +
+    kpi("Portée", w.range + " m") +
+    kpi("Pénétration", w.penetration) +
+    kpi("Recul", w.recoil) +
+    kpi("Polyvalence", w.versatility);
+}
+
+function bar(value, max, cls) {
+  var pct = Math.max(0, Math.min(100, (value / max) * 100));
+  return '<div class="track"><div class="' + cls + '" style="width:' + pct + '%"></div></div>';
+}
+
+function render() {
+  var a = byName(document.getElementById("weaponA").value);
+  var b = byName(document.getElementById("weaponB").value);
+  if (!a || !b) return;
+
+  document.getElementById("headA").textContent = a.name;
+  document.getElementById("headB").textContent = b.name;
+  renderSide("A", a);
+  renderSide("B", b);
+
+  var rows = "";
+  for (var i = 0; i < STATS.length; i++) {
+    var key = STATS[i][0], label = STATS[i][1], type = STATS[i][2];
+    var win = winner(a, b, key, type);
+    var cls = "";
+    if (win === "Égal") cls = "eq";
+    else if (win === a.name) cls = "winA";
+    else if (win === b.name) cls = "winB";
+    rows += "<tr><td>" + esc(label) + "</td><td>" + esc(a[key]) + "</td><td>" + esc(b[key]) + "</td><td class='" + cls + "'>" + esc(win) + "</td></tr>";
+  }
+  document.getElementById("tbody").innerHTML = rows;
+
+  var bars = "";
+  for (var j = 0; j < STATS.length; j++) {
+    if (STATS[j][2] !== "num") continue;
+    var key2 = STATS[j][0], label2 = STATS[j][1], max = STATS[j][3];
+    bars += '<div class="barcard"><h3>' + esc(label2) + '</h3>' +
+      '<div class="small">' + esc(a.name) + ' : ' + esc(a[key2]) + '</div>' +
+      bar(a[key2], max, "fillA") +
+      '<div class="small">' + esc(b.name) + ' : ' + esc(b[key2]) + '</div>' +
+      bar(b[key2], max, "fillB") + '</div>';
+  }
+  document.getElementById("bars").innerHTML = bars;
+}
+
+document.getElementById("search").addEventListener("input", populateSelects);
+document.getElementById("weaponA").addEventListener("change", render);
+document.getElementById("weaponB").addEventListener("change", render);
+populateSelects();
+document.getElementById("weaponA").value = "DMR";
+document.getElementById("weaponB").value = "VSD";
+render();
+</script>
+</body>
+</html>
