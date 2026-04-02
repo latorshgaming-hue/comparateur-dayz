@@ -402,7 +402,7 @@ function render() {
     if (win === "Égal") cls = "eq";
     else if (win === a.name) cls = "winA";
     else if (win === b.name) cls = "winB";
-    rows += "<tr><td>" + esc(label) + "</td><td>" + esc(a[key]) + "</td><td>" + esc(b[key]) + "</td><td class='" + cls + "'>" + esc(win) + "</td></tr>";
+    rows += "<tr><td>" + label + "</td><td>" + a[key] + "</td><td>" + b[key] + "</td><td class='" + cls + "'>" + win + "</td></tr>";
   }
   document.getElementById("tbody").innerHTML = rows;
 
